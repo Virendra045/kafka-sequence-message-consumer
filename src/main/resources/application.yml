@@ -1,0 +1,50 @@
+kafkabootstrapservers: localhost:9092
+server:
+  port: 8092
+spring:
+  application:
+    name: consumer
+  cloud:
+    stream:
+      kafka:
+        binder:
+          auto-create-topics: false
+        bindings:
+          contractEventsConsumer-in-0:
+            consumer:
+              autoCommitOffset: true
+              startOffset: latest
+              configuration:
+                max.poll.records: 1
+      bindings:
+        contractEventsConsumer-in-0:
+          destination: TRADING-INFO
+          binder: contractEventsConsumer-binder
+          group: contract-data-assembler-consumer-group
+      binders:
+        contractEventsConsumer-binder:
+          type: kafka
+          environment:
+            spring:
+              kafka:
+                bootstrap-servers: ${kafkabootstrapservers}
+                properties:
+                  acks: all
+                  retries: 3
+                  batch.size: 16384
+                  linger.ms: 0
+                  metadata.max.age.ms: 180000
+                  connections.max.idle.ms: 180000
+                consumer:
+                  key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+                  value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+                  autoCommitOffset: true
+                  heartbeat.interval.ms: 3000
+                  session.timeout.ms: 30000
+                  max.poll.records: 1
+                  properties:
+                    spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+                    spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+                    spring.json.trusted.packages: "*"
+        function:
+          definition: contractEventsConsumer
